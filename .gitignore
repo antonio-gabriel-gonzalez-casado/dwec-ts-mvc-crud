@@ -1,0 +1,6 @@
+# Codigo js transpilado
+build
+
+# Paquetes de node
+node_modules
+
