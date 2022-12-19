@@ -12,7 +12,9 @@ Crear el fichero tsconfig.json mediante el comando:
 Dejar la configuración que se ha generado por defecto y además descomentar y cambiar las siguientes propiedades del fichero tsconfig.json
 
 `"outDir": "./dist",        /* Directorio donde se generará el código transpilado */`  
+
 `"sourceMap": true,         /* Genera un archivo donde se mapean los fuentes para las herramientas de depuración */` 
+
 `"allowJs": true,           /* Permite el uso de JS dentro de TS */`
 
 
@@ -67,10 +69,16 @@ Mientras estamos desarrollando en TS se necesita que el código se vaya transpil
 │   ├───controllers/
 │   │   └───person.controller.ts
 │   ├───models/
+│   │   ├───types/
+│   │   │   └───person.dto.type.ts
 │   │   └───person.model.ts
 │   ├───services/
+│   │   ├───interfaces/
+│   │   │   └───person.service.interface.ts
 │   │   └───person.service.ts
 │   ├───views/
+│   │   ├───types/
+│   │   │   └───input.type.ts
 │   │   └───person.view.ts
 │   └───app.ts
 ├───.DS_Store
