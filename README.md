@@ -49,6 +49,7 @@ Mientras estamos desarrollando en TS se necesita que el código se vaya transpil
 `npx webpack -w`
 
 ## Estructura del proyecto
+`
 ├───.vscode/
 │   └───launch.json
 ├───dist/
@@ -77,3 +78,4 @@ Mientras estamos desarrollando en TS se necesita que el código se vaya transpil
 ├───README.md
 ├───tsconfig.json
 └───webpack.config.js
+`
