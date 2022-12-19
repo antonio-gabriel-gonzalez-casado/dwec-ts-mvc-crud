@@ -1,5 +1,5 @@
 import { Person } from '../models/person.model';
-import { PersonService } from '../services/person.service';
+import { IPersonService } from '../services/interfaces/person.service.interface';
 import { PersonView } from '../views/person.view';
 
 /**
@@ -18,10 +18,18 @@ export class PersonController {
      * Constructor de la clase PersonController
      * 
      * @param personService servicio
-     * @param userView vista
+     * @param personView vista
      * 
      */
-    constructor(private personService: PersonService, private userView: PersonView) {
+    constructor(private personService: IPersonService, private personView: PersonView) {
+
+        // Display initial list o people
+        this.onUserListChanged(this.personService.getPeople());
 
     }
+
+    private onUserListChanged = (people: Person[]) => {
+        this.personView.displayPeople(people);
+    };
+    
 }
