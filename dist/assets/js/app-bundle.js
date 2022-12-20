@@ -32,11 +32,26 @@ class PersonController {
     constructor(personService, personView) {
         this.personService = personService;
         this.personView = personView;
-        this.onUserListChanged = (people) => {
+        /**
+         * Muestra en la vista la lista de personas que hay almacenadas
+         * @param people Lista de personas a mostrar
+         */
+        this.onPersonListChanged = (people) => {
             this.personView.displayPeople(people);
         };
-        // Display initial list o people
-        this.onUserListChanged(this.personService.getPeople());
+        /**
+         * Invoca al servicio de añadir una versona
+         * @param personDto DTO con los datos procedentes de la vista
+         */
+        this.handleAddPerson = (personDto) => {
+            this.personService.add(personDto);
+        };
+        // Cuando haya un cambio en la lista la vuelve a pintar actualizada
+        this.personService.bindPersonListChanged(this.onPersonListChanged);
+        // Invoca al servicio de añadir personas
+        this.personView.bindAddPerson(this.handleAddPerson);
+        // Muestra la lista inicial de personas
+        this.onPersonListChanged(this.personService.getPeople());
     }
 }
 exports.PersonController = PersonController;
@@ -66,9 +81,9 @@ class Person {
      */
     constructor(personDto) {
         this._id = this.uuidv4();
-        this._name = personDto.name;
-        this._birthday = personDto.birthday;
-        this._complete = personDto.complete;
+        this._name = personDto._name;
+        this._birthday = personDto._birthday;
+        this._complete = personDto._complete;
     }
     /**
     * @private
@@ -141,14 +156,32 @@ class PersonService {
             peopleStored = JSON.parse(peopleJSON);
         }
         this._people = peopleStored.map(person => new person_model_1.Person(person));
-        this._onUserListChanged = null;
+        // Inciialización a una función vacía.
+        this._onPersonListChanged = () => { };
     }
     /**
      *
      * @param callback
      */
-    bindUserListChanged(callback) {
-        this._onUserListChanged = callback;
+    bindPersonListChanged(callback) {
+        this._onPersonListChanged = callback;
+    }
+    /**
+     * Persiste en el local storage una lista de personas
+     * @param people lista de personas a persistir en el local storage
+     */
+    _commit(people) {
+        this._onPersonListChanged(people);
+        localStorage.setItem('people', JSON.stringify(people));
+    }
+    /**
+     * Transforma el DTO a Persona y lo añadie a la lista de personas, posteriormente invoca al método para persistir la información
+     * @param personDTO DTO con los datos de la persona a persiste
+     */
+    add(personDTO) {
+        const person = new person_model_1.Person(personDTO);
+        this._people.push(person);
+        this._commit(this._people);
     }
     /** GETTERS AND SETTERS **/
     getPeople() {
@@ -157,11 +190,11 @@ class PersonService {
     setPeople(value) {
         this._people = value;
     }
-    getOnUserListChanged() {
-        return this._onUserListChanged;
+    getOnPersonListChanged() {
+        return this._onPersonListChanged;
     }
-    setOnUserListChanged(value) {
-        this._onUserListChanged = value;
+    setOnPersonListChanged(value) {
+        this._onPersonListChanged = value;
     }
 }
 exports.PersonService = PersonService;
@@ -195,13 +228,16 @@ class PersonView {
         this.app = this.getElement('#person-management');
         // Crea un elemento de tipo forumalrio
         this.form = this.createElement('form');
-        // Inicialización de input para el nombre
+        // Inicialización de input para el nombre y se añade a una columna
         this.inputName = this.createInput({
             key: 'inputName',
             type: 'text',
             placeholder: 'Nombre',
             name: 'name'
         });
+        this.inputName.classList.add("form-control");
+        const colForInputName = this.createElement("div", "col-4");
+        colForInputName.append(this.inputName);
         // Inicialización de input para la fecha de nacimiento
         this.inputBirthday = this.createInput({
             key: 'inputBirthday',
@@ -209,16 +245,29 @@ class PersonView {
             placeholder: 'Fecha de Nacimiento',
             name: 'birthday'
         });
+        this.inputBirthday.classList.add("form-control");
+        const colForInputBirthday = this.createElement("div", "col-4");
+        colForInputBirthday.append(this.inputBirthday);
         // Inicialización de botón del formulario
-        this.submitButton = this.createElement('button');
-        this.submitButton.textContent = 'Submit';
+        this.submitButton = this.createElement('button', 'btn');
+        this.submitButton.textContent = 'Envíar';
+        this.submitButton.classList.add("btn-primary");
+        const colForSubmitButton = this.createElement("div", "col-3");
+        colForSubmitButton.append(this.submitButton);
+        //Se crea una columna vacía para conseguir 4 columnas y que el formulario quede alineado con las columnas de la tabla
+        const colEmpty = this.createElement("div", "col-1");
         // Se añade al formulario los campos y el botón
-        this.form.append(this.inputName, this.inputBirthday, this.submitButton);
+        this.form.classList.add("row");
+        this.form.append(colEmpty, colForInputName, colForInputBirthday, colForSubmitButton);
         this.title = this.createElement('h1');
         this.title.textContent = 'Personas';
-        this.personList = this.createElement('ul', 'person-list');
+        this.personList = this.createElement('div', 'person-list');
+        this.personList.classList.add("row");
+        // hr de separación entre el formulario y la lista
+        const hr = this.createElement('hr', 'border');
+        hr.classList.add("border-primary", "border-2", "gy-3");
         // Uso de optinal chaining para prevenir el null de app
-        (_a = this.app) === null || _a === void 0 ? void 0 : _a.append(this.title, this.form, this.personList);
+        (_a = this.app) === null || _a === void 0 ? void 0 : _a.append(this.title, this.form, hr, this.personList);
         this._temporaryBirthdayText = '';
         this._initLocalListeners();
     }
@@ -231,7 +280,7 @@ class PersonView {
         key: 'default',
         type: 'text',
         placeholder: 'default',
-        name: 'default'
+        name: '_default'
     }) {
         let inputName = this.createElement('input');
         inputName.type = toInput.type;
@@ -281,40 +330,90 @@ class PersonView {
         // Muestra el mensaje por defecto
         if (people.length === 0) {
             const p = this.createElement('p');
-            p.textContent = 'Nada que hacer! ¿Añadir una Persona?';
+            p.textContent = 'No hay personas! ¿Añadir una Persona?';
             this.personList.append(p);
         }
         else {
             // Crea los nodos
             people.forEach(person => {
-                const li = this.createElement('li');
-                li.id = person.getId();
-                const checkbox = this.createElement('input');
+                var _a, _b;
+                // Se crea un contenedor generar para cada perosna con cuatro columnas
+                const row = this.createElement('div', 'row');
+                row.classList.add("gy-2");
+                row.id = person.getId();
+                // Se define el checkbox en la primera columna
+                const checkbox = this.createElement('input', 'form-check-input');
                 checkbox.type = 'checkbox';
                 checkbox.checked = person.getComplete();
-                const spanUser = this.createElement('span');
-                const spanAge = this.createElement('span');
-                spanAge.contentEditable = 'true';
-                spanAge.classList.add('editable');
+                const colForCheckbox = this.createElement('div', 'col-1');
+                colForCheckbox.append(checkbox);
+                //Se define la segunda columna para el nombre de la persona
+                const colName = this.createElement('div', 'col-4');
+                //Se define la tercera columna para la fecha de nacimiento
+                const colBirthday = this.createElement('div', 'col-4');
+                const inputBirthday = this.createElement('input', "form-control");
+                inputBirthday.type = 'date';
+                inputBirthday.contentEditable = 'true';
+                inputBirthday.classList.add('editable');
                 if (person.getComplete()) {
                     const strikeName = this.createElement('s');
                     strikeName.textContent = person.getName();
-                    spanUser.append(strikeName);
+                    colName.append(strikeName);
                     const strikeAge = this.createElement('s');
-                    strikeAge.textContent = person.getBirthday().toDateString();
-                    spanAge.append(strikeAge);
+                    strikeAge.textContent = (_a = person.getBirthday()) === null || _a === void 0 ? void 0 : _a.toString();
+                    colBirthday.append(strikeAge);
                 }
                 else {
-                    spanUser.textContent = person.getName();
-                    spanAge.textContent = person.getBirthday().toDateString();
+                    colName.textContent = person.getName();
+                    colBirthday.textContent = (_b = person.getBirthday()) === null || _b === void 0 ? void 0 : _b.toString();
                 }
-                const deleteButton = this.createElement('button', 'delete');
+                // Se define la cuarta columna para el botón de borrar
+                const deleteButton = this.createElement('button', 'btn');
+                deleteButton.classList.add("btn-danger", "delete");
                 deleteButton.textContent = 'Borrar';
-                li.append(checkbox, spanUser, spanAge, deleteButton);
-                // Append nodes
-                this.personList.append(li);
+                const colDeleteButton = this.createElement('div', 'col-3');
+                colDeleteButton.append(deleteButton);
+                //Se añaden las cuatro columnas al contenedor de la fila
+                row.append(colForCheckbox, colName, colBirthday, colDeleteButton);
+                // Se añanden las filas separadas por hr
+                const hr = this.createElement('hr', 'border');
+                hr.classList.add("border-default", "border-1", "gy-1");
+                this.personList.append(row, hr);
             });
         }
+    }
+    /**
+     * Definición de atributos en métodos
+     */
+    get _nameText() {
+        return this.inputName.value;
+    }
+    get _birthDayText() {
+        return this.inputBirthday.value;
+    }
+    /**
+     * Resetea los campos del formulario
+     */
+    _resetInput() {
+        this.inputName.value = '';
+        this.inputBirthday.value = '';
+    }
+    /**
+     * Captura el evento submit del formulario y lo
+     * @param handler
+     */
+    bindAddPerson(handler) {
+        this.form.addEventListener('submit', event => {
+            event.preventDefault();
+            if (this._nameText) {
+                // ES IMPORTANTE QUE LOS ATRIBUTOS COINCIDAN CON LOS DEL DTO, ES DECIR CON EL _ DE PREFIJO
+                handler({
+                    _name: this._nameText,
+                    _birthday: this._birthDayText
+                });
+                this._resetInput();
+            }
+        });
     }
 }
 exports.PersonView = PersonView;

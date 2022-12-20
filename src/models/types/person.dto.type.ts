@@ -5,9 +5,9 @@
  */
 export type PersonDto = {
 
-    id: string;
-    name: string;
-    birthday: Date;
-    complete: boolean;
+    _id: string;
+    _name: string;
+    _birthday: Date;
+    _complete: boolean;
 
 }

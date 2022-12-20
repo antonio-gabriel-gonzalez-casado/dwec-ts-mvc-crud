@@ -1,4 +1,6 @@
 import { Person } from '../../models/person.model';
+import { PersonDto } from '../../models/types/person.dto.type';
+
 
 /**
  * @interface Service
@@ -8,7 +10,9 @@ import { Person } from '../../models/person.model';
 export interface IPersonService {
 
 
-    bindUserListChanged(callback: Function):void;
+    bindPersonListChanged(callback: Function):void;
+
+    add(personDTO: PersonDto): void;
 
     /** GETTERS AND SETTERS **/
 
@@ -16,8 +20,8 @@ export interface IPersonService {
 
     setPeople(value: Person[]):void;
 
-    getOnUserListChanged(): Function | null;
+    getOnPersonListChanged(): Function | null;
 
-    setOnUserListChanged(value: Function | null):void;
+    setOnPersonListChanged(value: Function | null):void;
 
 }

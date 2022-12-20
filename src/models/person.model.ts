@@ -18,9 +18,9 @@ export class Person {
      */
     constructor(personDto: PersonDto) {
         this._id = this.uuidv4();
-        this._name = personDto.name;
-        this._birthday = personDto.birthday;
-        this._complete = personDto.complete;
+        this._name = personDto._name;
+        this._birthday = personDto._birthday;
+        this._complete = personDto._complete;
     }
 
     /**
