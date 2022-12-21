@@ -9,12 +9,11 @@ import { Input } from './types/input.type';
  */
 export class PersonView {
   private app: HTMLElement | null;
-  private form: HTMLElement;
-  private submitButton: HTMLElement;
-  private inputName: HTMLInputElement;
-  private inputBirthday: HTMLInputElement;
-  private title: HTMLElement;
-  private personList: HTMLElement;
+  private form: HTMLElement | null;
+  private submitButton: HTMLElement | null;
+  private inputName: HTMLInputElement | null;
+  private inputBirthday: HTMLInputElement | null;
+  private personList: HTMLElement | null;
 
   /**
    * @constructor 
@@ -24,57 +23,23 @@ export class PersonView {
   constructor() {
     // Obtiene el contenedor raiz de la aplicación
     this.app = this.getElement('#person-management');
-
-    // Crea un elemento de tipo forumalrio
-    this.form = this.createElement('form');
-
-    // Inicialización de input para el nombre y se añade a una columna
-    this.inputName = this.createInput({
-      key: 'inputName',
-      type: 'text',
-      placeholder: 'Nombre',
-      name: 'name'
-    });
-    this.inputName.classList.add("form-control");
-    const colForInputName = this.createElement("div", "col-4");
-    colForInputName.append(this.inputName);
-    // Inicialización de input para la fecha de nacimiento
-    this.inputBirthday = this.createInput({
-      key: 'inputBirthday',
-      type: 'date',
-      placeholder: 'Fecha de Nacimiento',
-      name: 'birthday'
-    });
-    this.inputBirthday.classList.add("form-control");
-    const colForInputBirthday = this.createElement("div", "col-4");
-    colForInputBirthday.append(this.inputBirthday);
-
-    // Inicialización de botón del formulario
-    this.submitButton = this.createElement('button', 'btn');
-    this.submitButton.textContent = 'Envíar';
-    this.submitButton.classList.add("btn-primary");
-    const colForSubmitButton = this.createElement("div", "col-3");
-    colForSubmitButton.append(this.submitButton);
-
-    //Se crea una columna vacía para conseguir 4 columnas y que el formulario quede alineado con las columnas de la tabla
-    const colEmpty = this.createElement("div", "col-1");
-
-    // Se añade al formulario los campos y el botón
-    this.form.classList.add("row");
-    this.form.append(colEmpty, colForInputName, colForInputBirthday, colForSubmitButton);
-
-
-    this.title = this.createElement('h1');
-    this.title.textContent = 'Personas';
-    this.personList = this.createElement('div', 'person-list');
-    this.personList.classList.add("row");
-    // hr de separación entre el formulario y la lista
-    const hr = this.createElement('hr', 'border');
-    hr.classList.add("border-primary", "border-2", "gy-3");
-    // Uso de optinal chaining para prevenir el null de app
-    this.app?.append(this.title, this.form, hr, this.personList);
+    // Obtiene el elemento formulario
+    this.form = this.getElement('#form-add-person');
+    // Obtiene el elemento Input-Text para el nombre
+    this.inputName = this.getElement('#name') as HTMLInputElement;
+    // Obtiene el elemento Input-Date para la fecha de nacimiento
+    this.inputBirthday = this.getElement('#birthday') as HTMLInputElement;
+    // Obtiene el botón de añadir persona btn-submit
+    this.submitButton = this.getElement('#btn-submit');
+    // Obtiene el contenedor donde se almacenarán las personas
+    this.personList = this.getElement("#div-person-list");
 
   }
+
+
+  /********************************************************************************************
+   *  FUNCIONES GENÉRICAS RELACIONADAS CON LA MANIPULACIÓN DE LOS DATOS DE LA INTERFAZ (HTML) *
+   ********************************************************************************************/
 
   /**
    * Creación de un Campo input con los datos pasados como parámetros
@@ -83,7 +48,7 @@ export class PersonView {
    */
   private createInput(
     toInput: Input = {
-      key: 'default',
+      id: 'default',
       type: 'text',
       placeholder: 'default',
       name: '_default'
@@ -119,33 +84,125 @@ export class PersonView {
     return element;
   }
 
+
+  /**********************************************************************************
+   *  FUNCIONES RELACIONADAS CON LA MANIPULACIÓN DEL HTML DE LA LISTA DE USUARIOS   *
+   **********************************************************************************/
+
   /**
-   * Crea la tabla con la lista de personas
-   * @param people 
+   * Resetea la lista de personas HTML para posteriormente ser regenerada
    */
-  public displayPeople(people: Person[]): void {
+  private clearList(): void{
     // Borra todos los nodos
-    while (this.personList.firstChild) {
+    while (this.personList?.firstChild) {
       this.personList.removeChild(this.personList.firstChild);
     }
+  }
+
+  /**
+   * Muestra un mensaje indicando que no hay personas en la lista
+   */
+  private showEmptyListMessage():void {
+    const p = this.createElement('p');
+    p.textContent = 'No hay personas! ¿Añadir una Persona?';
+    this.personList?.append(p);
+  }
+
+  /**
+   * Crea un div que servida de contenedor para los datos de una persona
+   * @param person persona a la que le corresponde el contenedor
+   * @returns {HTMLElement} Devuelve el HTML asociado al contendor de la persona
+   */
+  private createPersonContainer(person: Person): HTMLElement{
+    const row = this.createElement('div', 'row');
+    row.classList.add("gy-2");
+    row.id = person.getId();
+    return row;
+  }
+
+  /**
+   * Crea un HR con un estilo predefinido.
+   * @returns {HTMLElement} Devuelve el HTML asociado al HR
+   */
+  private addHrtoList():HTMLElement{
+    const hr = this.createElement('hr', 'border');
+    hr.classList.add("border-default", "border-1", "gy-1");
+    return hr;
+  }
+
+  /**
+   * Crea un input de type checkbox y le establece un valor por defect.
+   * @param {boolean} toChecked valor booleano para poder determinar si hay que marcar el check o no
+   * @returns {HTMLElement} Devuelve el HTML asociado al Checkbox
+   */
+  private createCheckbox(toChecked: boolean): HTMLElement{
+    const checkbox = this.createElement('input', 'form-check-input') as HTMLInputElement;
+    checkbox.type = 'checkbox';
+    // Complete contiene el valor boolean para determinar si se tiene que marcar o no el check
+    checkbox.checked = toChecked;
+    return checkbox;
+  }
+
+  /**
+   * Tacha el texto pasado como parámetro
+   * @param text texto al que se le dará el formato de tachado
+   * @returns {HTMLElement} Devuelve el HTML asociado al texto tachado.
+   */
+  private createStrikedText(text: string): HTMLElement{
+    const strikeName = this.createElement('s');
+    strikeName.textContent = text;
+    return strikeName;
+  }
+
+  /**
+   * Crea un campo input de tipo date con el valor pasado como parámetro
+   * @param {string} id id de la persona para concatenarlo en el atributo id y name
+   * @param {Date} value fecha de nacimiento para establecerla como valor
+   * @returns {HTMLInputElement} Devuelve el HTML asociado al texto tachado.
+   */
+  private createEditableInputDate(id: string, value: Date): HTMLInputElement{
+    const birthdayInput: Input = {
+      id: 'inputBirthday'+id,
+      type: 'date',
+      placeholder: 'default',
+      name: 'birthday-'+id,
+    }
+    const inputBirthdayElement: HTMLInputElement = this.createInput(birthdayInput);
+    inputBirthdayElement.value = value?.toString();
+    inputBirthdayElement.classList.add('form-control', 'editable');
+
+    return inputBirthdayElement;
+  }
+
+  /**
+   * Crear un elemento HTML de tipo botón especificamente para borrar personas
+   */
+  private createDeleteButton(): HTMLElement{
+    const deleteButton = this.createElement('button', 'btn');
+    deleteButton.classList.add("btn-danger", "delete");
+    deleteButton.textContent = 'Borrar';
+    return deleteButton;
+  }
+
+
+
+  /**
+   * FUNCIÓN PRINCIPAL. Crea la tabla con la lista de personas
+   * @param {Person[]} people Lista de personas para mostrar en la tabla.
+   */
+  public displayPeople(people: Person[]): void {
+    // En primer lugar se resetea la lista de personas.
+    this.clearList();
 
     // Muestra el mensaje por defecto
     if (people.length === 0) {
-      const p = this.createElement('p');
-      p.textContent = 'No hay personas! ¿Añadir una Persona?';
-      this.personList.append(p);
+      this.showEmptyListMessage();
     } else {
-      // Crea los nodos
+      // Crea los nodos de la lista para cada persona
       people.forEach(person => {
-        // Se crea un contenedor generar para cada perosna con cuatro columnas
-        const row = this.createElement('div', 'row');
-        row.classList.add("gy-2");
-        row.id = person.getId();
-
+        // Se crea un contenedor que engloba a cada persona cuatro columnas (1: checkbox, 2: nombre, 3: fecha de nacimiento, 4: botón borrar)
         // Se define el checkbox en la primera columna
-        const checkbox = this.createElement('input', 'form-check-input') as HTMLInputElement;
-        checkbox.type = 'checkbox';
-        checkbox.checked = person.getComplete();
+        const checkbox = this.createCheckbox(person.getComplete());
         const colForCheckbox = this.createElement('div', 'col-1');
         colForCheckbox.append(checkbox);
 
@@ -156,37 +213,34 @@ export class PersonView {
         const colBirthday = this.createElement('div', 'col-4');
 
         if (person.getComplete()) {
-          const strikeName = this.createElement('s');
-          strikeName.textContent = person.getName();
+          //Si la persona tiene el atributo complete establecido a true entonces se creará una fila con el texto tachado y la fecha deshabilitada
+          const strikeName = this.createStrikedText(person.getName());
           colName.append(strikeName);
 
-          const strikeBirthday = this.createElement('s');
-          strikeBirthday.textContent = person.getBirthday()?.toString();
+          const strikeBirthday = this.createStrikedText(person.getBirthday()?.toString());
           colBirthday.append(strikeBirthday);
         } else {
+          //Si la persona tiene el atributo complete establecido a falso entonces se creará una fila con el texto y la fecha editable
           colName.textContent = person.getName();
-          const inputBirthday: HTMLInputElement = this.createElement('input', "form-control") as HTMLInputElement;
-          inputBirthday.type = 'date';
-          inputBirthday.value = person.getBirthday()?.toString();
-          inputBirthday.classList.add('editable');
-          colBirthday.append(inputBirthday);
+
+          const inputBirthdayElement = this.createEditableInputDate(person.getId(), person.getBirthday());
+          colBirthday.append(inputBirthdayElement);
         }
 
         // Se define la cuarta columna para el botón de borrar
-        const deleteButton = this.createElement('button', 'btn');
-        deleteButton.classList.add("btn-danger", "delete");
-        deleteButton.textContent = 'Borrar';
-
+        const deleteButton = this.createDeleteButton();
         const colDeleteButton = this.createElement('div', 'col-3');
         colDeleteButton.append(deleteButton);
 
         //Se añaden las cuatro columnas al contenedor de la fila
+        const row = this.createPersonContainer(person);
         row.append(colForCheckbox, colName, colBirthday, colDeleteButton);
 
-        // Se añanden las filas separadas por hr
-        const hr = this.createElement('hr', 'border');
-        hr.classList.add("border-default", "border-1", "gy-1");
-        this.personList.append(row, hr);
+        // Se crea un hr para separar las filas
+        const hr = this.addHrtoList();
+
+        // Se añade la fila y el separador
+        this.personList?.append(row, hr);
       });
     }
   }
@@ -195,26 +249,32 @@ export class PersonView {
    * Definición de atributos en métodos
    */
   get _nameText() {
-    return this.inputName.value;
+    return this.inputName?.value;
   }
   get _birthDayText() {
-    return this.inputBirthday.value;
+    return this.inputBirthday?.value;
   }
 
   /**
    * Resetea los campos del formulario
    */
   _resetInput() {
-    this.inputName.value = '';
-    this.inputBirthday.value = '';
+    if(this.inputName != null)
+      this.inputName.value = '';
+    if(this.inputBirthday != null)
+      this.inputBirthday.value = '';
   }
+
+  /**********************************************************************************
+   *  FUNCIONES RELACIONADAS CON EL CONTROL DE EVENTOS DE LA INTERFAZ               *
+   **********************************************************************************/
 
   /**
    * Captura el evento submit del formulario para pasar los datos al controlador
    * @param handler 
    */
   public bindAddPerson(handler: Function): void {
-    this.form.addEventListener('submit', event => {
+    this.form?.addEventListener('submit', event => {
       event.preventDefault();
 
       if (this._nameText) {
@@ -233,7 +293,7 @@ export class PersonView {
    * @param handler 
    */
   public bindEditPerson(handler: Function) {
-    this.personList.addEventListener('change', event => {
+    this.personList?.addEventListener('change', event => {
       const element = (event.target as any);
       if (element.type === "date"){
         handler({
@@ -249,7 +309,7 @@ export class PersonView {
    * @param handler 
    */
   public bindDeletePerson(handler: Function) {
-    this.personList.addEventListener('click', event => {
+    this.personList?.addEventListener('click', event => {
       if ((event.target as any).className.includes('delete')) {
         const id = (event.target as any).parentElement.parentElement.id;
         handler(id);
@@ -262,7 +322,7 @@ export class PersonView {
    * @param handler 
    */
   public bindTogglePerson(handler: Function) {
-    this.personList.addEventListener('change', event => {
+    this.personList?.addEventListener('change', event => {
       if ((event.target as any).type === 'checkbox') {
         const id = (event.target as any).parentElement.parentElement.id;
         handler(id);
