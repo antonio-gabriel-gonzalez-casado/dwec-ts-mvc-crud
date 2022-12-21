@@ -17,7 +17,8 @@ export class Person {
      * @param personDto 
      */
     constructor(personDto: PersonDto) {
-        this._id = this.uuidv4();
+        this._id = personDto._id ?? this.uuidv4();
+        //this._id = this.uuidv4();
         this._name = personDto._name;
         this._birthday = personDto._birthday;
         this._complete = personDto._complete;

@@ -46,10 +46,37 @@ class PersonController {
         this.handleAddPerson = (personDto) => {
             this.personService.add(personDto);
         };
+        /**
+         * Modifca los datos de una persona
+         * @param person persona a editar
+         */
+        this.handleEditPerson = (person) => {
+            this.personService.edit(person);
+        };
+        /**
+         * Eliminar a la persona de la lista
+         * @param id ID de la persona a borrar
+         */
+        this.handleDeletePerson = (id) => {
+            this.personService.delete(id);
+        };
+        /**
+         * Tacha a una persona de la lista
+         * @param id ID de la persona a tachar
+         */
+        this.handleTogglePerson = (id) => {
+            this.personService.toggle(id);
+        };
         // Cuando haya un cambio en la lista la vuelve a pintar actualizada
         this.personService.bindPersonListChanged(this.onPersonListChanged);
         // Invoca al servicio de añadir personas
         this.personView.bindAddPerson(this.handleAddPerson);
+        // Invoca al servicio de editar personas
+        this.personView.bindEditPerson(this.handleEditPerson);
+        // Invoca al servicio de eliminar personas
+        this.personView.bindDeletePerson(this.handleDeletePerson);
+        // Invoca al servicio para tachar a una persona
+        this.personView.bindTogglePerson(this.handleTogglePerson);
         // Muestra la lista inicial de personas
         this.onPersonListChanged(this.personService.getPeople());
     }
@@ -80,7 +107,9 @@ class Person {
      * @param personDto
      */
     constructor(personDto) {
-        this._id = this.uuidv4();
+        var _a;
+        this._id = (_a = personDto._id) !== null && _a !== void 0 ? _a : this.uuidv4();
+        //this._id = this.uuidv4();
         this._name = personDto._name;
         this._birthday = personDto._birthday;
         this._complete = personDto._complete;
@@ -183,6 +212,45 @@ class PersonService {
         this._people.push(person);
         this._commit(this._people);
     }
+    /**
+     * Busca a la persona que se va a editar por id y actualiza la fecha de nacimiento
+     * @param personToEdit datos modificados para editar
+     */
+    edit(personToEdit) {
+        this._people = this._people.map(person => {
+            if (person.getId() === personToEdit._id) {
+                person.setBirthday(personToEdit._birthday);
+            }
+            return person;
+        });
+        this._commit(this._people);
+    }
+    /**
+     * Buscar a la persona que se va a elminar por id y la elmina de la lista
+     * @param _id id de la persona a elminar
+     */
+    delete(_id) {
+        this._people = this._people.filter(person => {
+            if (person.getId() !== _id) {
+                return true;
+            }
+            return false;
+        });
+        this._commit(this._people);
+    }
+    /**
+    * Buscar a la persona que se va a tachar o quitar el tachado y se cambia el valor de complete
+    * @param _id id de la persona a tachar
+    */
+    toggle(_id) {
+        this._people = this._people.map(person => {
+            if (person.getId() === _id) {
+                person.setComplete(!person.getComplete());
+            }
+            return person;
+        });
+        this._commit(this._people);
+    }
     /** GETTERS AND SETTERS **/
     getPeople() {
         return this._people;
@@ -268,8 +336,6 @@ class PersonView {
         hr.classList.add("border-primary", "border-2", "gy-3");
         // Uso de optinal chaining para prevenir el null de app
         (_a = this.app) === null || _a === void 0 ? void 0 : _a.append(this.title, this.form, hr, this.personList);
-        this._temporaryBirthdayText = '';
-        this._initLocalListeners();
     }
     /**
      * Creación de un Campo input con los datos pasados como parámetros
@@ -309,16 +375,6 @@ class PersonView {
         return element;
     }
     /**
-     * Inicializa los listeners
-     */
-    _initLocalListeners() {
-        this.personList.addEventListener('input', event => {
-            if (event.target.className === 'editable') {
-                this._temporaryBirthdayText = event.target.innerText;
-            }
-        });
-    }
-    /**
      * Crea la tabla con la lista de personas
      * @param people
      */
@@ -351,21 +407,21 @@ class PersonView {
                 const colName = this.createElement('div', 'col-4');
                 //Se define la tercera columna para la fecha de nacimiento
                 const colBirthday = this.createElement('div', 'col-4');
-                const inputBirthday = this.createElement('input', "form-control");
-                inputBirthday.type = 'date';
-                inputBirthday.contentEditable = 'true';
-                inputBirthday.classList.add('editable');
                 if (person.getComplete()) {
                     const strikeName = this.createElement('s');
                     strikeName.textContent = person.getName();
                     colName.append(strikeName);
-                    const strikeAge = this.createElement('s');
-                    strikeAge.textContent = (_a = person.getBirthday()) === null || _a === void 0 ? void 0 : _a.toString();
-                    colBirthday.append(strikeAge);
+                    const strikeBirthday = this.createElement('s');
+                    strikeBirthday.textContent = (_a = person.getBirthday()) === null || _a === void 0 ? void 0 : _a.toString();
+                    colBirthday.append(strikeBirthday);
                 }
                 else {
                     colName.textContent = person.getName();
-                    colBirthday.textContent = (_b = person.getBirthday()) === null || _b === void 0 ? void 0 : _b.toString();
+                    const inputBirthday = this.createElement('input', "form-control");
+                    inputBirthday.type = 'date';
+                    inputBirthday.value = (_b = person.getBirthday()) === null || _b === void 0 ? void 0 : _b.toString();
+                    inputBirthday.classList.add('editable');
+                    colBirthday.append(inputBirthday);
                 }
                 // Se define la cuarta columna para el botón de borrar
                 const deleteButton = this.createElement('button', 'btn');
@@ -399,7 +455,7 @@ class PersonView {
         this.inputBirthday.value = '';
     }
     /**
-     * Captura el evento submit del formulario y lo
+     * Captura el evento submit del formulario para pasar los datos al controlador
      * @param handler
      */
     bindAddPerson(handler) {
@@ -412,6 +468,45 @@ class PersonView {
                     _birthday: this._birthDayText
                 });
                 this._resetInput();
+            }
+        });
+    }
+    /**
+     * Captura el evento para editar a una persona
+     * @param handler
+     */
+    bindEditPerson(handler) {
+        this.personList.addEventListener('change', event => {
+            const element = event.target;
+            if (element.type === "date") {
+                handler({
+                    _id: element.parentElement.parentElement.id,
+                    _birthday: element.value.toString()
+                });
+            }
+        });
+    }
+    /**
+     * Captura el evento para borrar una persona
+     * @param handler
+     */
+    bindDeletePerson(handler) {
+        this.personList.addEventListener('click', event => {
+            if (event.target.className.includes('delete')) {
+                const id = event.target.parentElement.parentElement.id;
+                handler(id);
+            }
+        });
+    }
+    /**
+     * Captura el evento para tachar a una persona
+     * @param handler
+     */
+    bindTogglePerson(handler) {
+        this.personList.addEventListener('change', event => {
+            if (event.target.type === 'checkbox') {
+                const id = event.target.parentElement.parentElement.id;
+                handler(id);
             }
         });
     }

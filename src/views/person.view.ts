@@ -15,7 +15,6 @@ export class PersonView {
   private inputBirthday: HTMLInputElement;
   private title: HTMLElement;
   private personList: HTMLElement;
-  private _temporaryBirthdayText: string;
 
   /**
    * @constructor 
@@ -75,8 +74,6 @@ export class PersonView {
     // Uso de optinal chaining para prevenir el null de app
     this.app?.append(this.title, this.form, hr, this.personList);
 
-    this._temporaryBirthdayText = '';
-    this._initLocalListeners();
   }
 
   /**
@@ -123,17 +120,6 @@ export class PersonView {
   }
 
   /**
-   * Inicializa los listeners 
-   */
-  private _initLocalListeners(): void {
-    this.personList.addEventListener('input', event => {
-      if ((event.target as any).className === 'editable') {
-        this._temporaryBirthdayText = (event.target as any).innerText;
-      }
-    });
-  }
-
-  /**
    * Crea la tabla con la lista de personas
    * @param people 
    */
@@ -166,26 +152,24 @@ export class PersonView {
         //Se define la segunda columna para el nombre de la persona
         const colName = this.createElement('div', 'col-4');
 
-         //Se define la tercera columna para la fecha de nacimiento
+        //Se define la tercera columna para la fecha de nacimiento
         const colBirthday = this.createElement('div', 'col-4');
-        
-        const inputBirthday:HTMLInputElement = this.createElement('input', "form-control") as HTMLInputElement;
-        inputBirthday.type = 'date';
-        inputBirthday.contentEditable = 'true';
-        inputBirthday.classList.add('editable');
-
 
         if (person.getComplete()) {
           const strikeName = this.createElement('s');
           strikeName.textContent = person.getName();
           colName.append(strikeName);
 
-          const strikeAge = this.createElement('s');
-          strikeAge.textContent = person.getBirthday()?.toString();
-          colBirthday.append(strikeAge);
+          const strikeBirthday = this.createElement('s');
+          strikeBirthday.textContent = person.getBirthday()?.toString();
+          colBirthday.append(strikeBirthday);
         } else {
           colName.textContent = person.getName();
-          colBirthday.textContent = person.getBirthday()?.toString();
+          const inputBirthday: HTMLInputElement = this.createElement('input', "form-control") as HTMLInputElement;
+          inputBirthday.type = 'date';
+          inputBirthday.value = person.getBirthday()?.toString();
+          inputBirthday.classList.add('editable');
+          colBirthday.append(inputBirthday);
         }
 
         // Se define la cuarta columna para el botón de borrar
@@ -225,11 +209,11 @@ export class PersonView {
     this.inputBirthday.value = '';
   }
 
-/**
- * Captura el evento submit del formulario y lo 
- * @param handler 
- */
- public bindAddPerson(handler: Function): void {
+  /**
+   * Captura el evento submit del formulario para pasar los datos al controlador
+   * @param handler 
+   */
+  public bindAddPerson(handler: Function): void {
     this.form.addEventListener('submit', event => {
       event.preventDefault();
 
@@ -244,6 +228,46 @@ export class PersonView {
     });
   }
 
+  /**
+   * Captura el evento para editar a una persona
+   * @param handler 
+   */
+  public bindEditPerson(handler: Function) {
+    this.personList.addEventListener('change', event => {
+      const element = (event.target as any);
+      if (element.type === "date"){
+        handler({
+          _id: element.parentElement.parentElement.id,
+          _birthday: element.value.toString()
+        });
+      }
+    });
+  }
 
+  /**
+   * Captura el evento para borrar una persona
+   * @param handler 
+   */
+  public bindDeletePerson(handler: Function) {
+    this.personList.addEventListener('click', event => {
+      if ((event.target as any).className.includes('delete')) {
+        const id = (event.target as any).parentElement.parentElement.id;
+        handler(id);
+      }
+    });
+  }
+
+  /**
+   * Captura el evento para tachar a una persona
+   * @param handler 
+   */
+  public bindTogglePerson(handler: Function) {
+    this.personList.addEventListener('change', event => {
+      if ((event.target as any).type === 'checkbox') {
+        const id = (event.target as any).parentElement.parentElement.id;
+        handler(id);
+      }
+    });
+  }
 
 }

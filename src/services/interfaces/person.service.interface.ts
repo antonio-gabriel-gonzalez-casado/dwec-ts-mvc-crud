@@ -14,6 +14,12 @@ export interface IPersonService {
 
     add(personDTO: PersonDto): void;
 
+    edit(personToEdit: PersonDto):void;
+
+    delete(_id: string):void;
+
+    toggle(_id: string):void;
+
     /** GETTERS AND SETTERS **/
 
     getPeople(): Person[];

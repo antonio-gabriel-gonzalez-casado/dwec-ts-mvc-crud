@@ -28,6 +28,12 @@ export class PersonController {
         this.personService.bindPersonListChanged(this.onPersonListChanged);
         // Invoca al servicio de añadir personas
         this.personView.bindAddPerson(this.handleAddPerson);
+        // Invoca al servicio de editar personas
+        this.personView.bindEditPerson(this.handleEditPerson);
+        // Invoca al servicio de eliminar personas
+        this.personView.bindDeletePerson(this.handleDeletePerson);
+        // Invoca al servicio para tachar a una persona
+        this.personView.bindTogglePerson(this.handleTogglePerson);
 
         // Muestra la lista inicial de personas
         this.onPersonListChanged(this.personService.getPeople());
@@ -48,6 +54,30 @@ export class PersonController {
      */
     public handleAddPerson = (personDto: PersonDto) => {
         this.personService.add(personDto);
+    };
+
+    /**
+     * Modifca los datos de una persona
+     * @param person persona a editar
+     */
+    public handleEditPerson = (person: PersonDto) => {
+        this.personService.edit(person);
+    };
+
+    /**
+     * Eliminar a la persona de la lista
+     * @param id ID de la persona a borrar
+     */
+    public handleDeletePerson = (id: string) => {
+        this.personService.delete(id);
+    };
+
+    /**
+     * Tacha a una persona de la lista
+     * @param id ID de la persona a tachar
+     */
+    public handleTogglePerson = (id: string) => {
+        this.personService.toggle(id);
     };
 
 }
